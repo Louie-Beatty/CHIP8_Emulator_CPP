@@ -5,6 +5,8 @@
 int_fast16_t PC = 0x200;
 uint8_t RAM[4096];
 int_fast16_t STACK[16];
+int_fast8_t SP = 0;
+
 
 int_fast8_t timerReg; //decremented at rate of 60Hz
 int_fast8_t soundReg;
@@ -33,7 +35,7 @@ uint8_t FONT[80] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 };
 
-void loadFonts() {
+void LoadFonts() {
     for (int i = 0; i < 80; ++i) {
         constexpr int FONT_START_ADDRESS = 0x050; //05-09F
         RAM[FONT_START_ADDRESS + i] = FONT[i];
@@ -41,7 +43,7 @@ void loadFonts() {
 }
 
 //ISA
-void clearScreen() {
+void ClearScreen() {
     for (auto & i : frameBuffer) {
         for (unsigned char & j : i) {
             j = 0;
@@ -50,30 +52,30 @@ void clearScreen() {
     //IDE cleaned up code,just a nested for loop.
 }
 
-void jumpInstruction(const uint16_t instructionJump) {
+void JumpInstruction(const uint16_t instructionJump) {
     PC = instructionJump & 0x0FFF;
 }
 
-void setRegister(const uint16_t OPCODE) {
+void SetRegister(const uint16_t OPCODE) {
     const uint16_t regToSet = (OPCODE & 0x0F00)>>8;
     const uint16_t value = OPCODE & 0x00FF;
     V[regToSet] = value;
 }
 
-void addValueToRegister(const uint16_t OPCODE) {
+void AddValueToRegister(const uint16_t OPCODE) {
     // 7XNN
     const uint16_t regToSet = (OPCODE & 0x0F00)>>8;
     const uint16_t valueToAdd = OPCODE & 0x00FF;
     V[regToSet] += valueToAdd;
 }
 
-void setIndexRegister(const uint16_t OPCODE) {
+void SetIndexRegister(const uint16_t OPCODE) {
     I = OPCODE & 0x0FFF;
 }
 
 
 //GUI
-void drawDisplay(const uint16_t OPCODE) {
+void DrawDisplay(const uint16_t OPCODE) {
     V[15] = 0;
     const uint16_t pixelHeight = (OPCODE & 0X000F);
     const uint16_t xCord =  V[(OPCODE & 0x0F00) >> 8] % 64;
@@ -98,7 +100,7 @@ void drawDisplay(const uint16_t OPCODE) {
 }
 
 
-void updateDisplay() {
+void UpdateDisplay() {
     BeginDrawing();
     ClearBackground(BLACK);
     for (int y = 0; y < 32; ++y) {
@@ -114,7 +116,7 @@ void updateDisplay() {
 
 //load rom into memory
 
-void loadFile() {
+void LoadFile() {
     //later on will have preloaded cartridges memory carts also file handling lmao
     //add gui cool little cartridge screen
 
@@ -136,31 +138,31 @@ void loadFile() {
 
 }
 
-uint16_t fetch() { //ai generated function credit where credits due.
+uint16_t Fetch() { //ai generated function credit where credits due.
     const uint16_t opcode = (RAM[PC] << 8) | RAM[PC + 1];
     return opcode;
 }
 
-void decodeExecute(const uint16_t OPCODE) {
+void DecodeExecute(const uint16_t OPCODE) {
     switch (OPCODE & 0xF000) {
-        case 0x00E0:
-            clearScreen();
+        case 0x0000:
+            ClearScreen();
             break;
         case 0x1000:
-            jumpInstruction(OPCODE);
+            JumpInstruction(OPCODE);
             break;
         case 0x6000:
-            setRegister(OPCODE);
+            SetRegister(OPCODE);
             break;
         case 0x7000:
-            addValueToRegister(OPCODE);
+            AddValueToRegister(OPCODE);
             break;
 
         case 0xA000:
-            setIndexRegister(OPCODE);
+            SetIndexRegister(OPCODE);
             break;
         case 0xD000:
-            drawDisplay(OPCODE);
+            DrawDisplay(OPCODE);
             break;
         default:
             std::cout << "Unknown Opcode:" << OPCODE << std::endl;
@@ -168,26 +170,26 @@ void decodeExecute(const uint16_t OPCODE) {
     }
 }
 void FDELoop() {
-    const uint16_t OPCODE = fetch();
+    const uint16_t OPCODE = Fetch();
     PC += 2;
-    decodeExecute(OPCODE);
+    DecodeExecute(OPCODE);
 }
 
-void setup() {
-    loadFonts();
-    loadFile();
+void Setup() {
+    LoadFonts();
+    LoadFile();
     InitWindow(640, 320, "CHIP8 - Louie Beatty");
     SetTargetFPS(60);
 }
 
 int main() {
-    setup();
+    Setup();
     //not a fan of this but works for now
     while (!WindowShouldClose()) {
         for (int i = 0; i < 10; ++i) {
             FDELoop();
         }
-        updateDisplay();
+        UpdateDisplay();
     }
     CloseWindow();
     return 0;
