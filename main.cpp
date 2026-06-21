@@ -52,52 +52,48 @@ void ClearScreen() {
     //IDE cleaned up code,just a nested for loop.
 }
 
-void JumpInstruction(const uint16_t instructionJump) {
-    PC = instructionJump & 0x0FFF;
+void JumpInstruction(const uint16_t address) {
+    PC = address;
 }
 
-void SetRegister(const uint16_t OPCODE) {
-    const uint16_t regToSet = (OPCODE & 0x0F00)>>8;
-    const uint16_t value = OPCODE & 0x00FF;
-    V[regToSet] = value;
+void SetRegister(const uint8_t X, const uint8_t NN) {
+    V[X] = NN;
 }
 
-void AddValueToRegister(const uint16_t OPCODE) {
-    // 7XNN
-    const uint16_t regToSet = (OPCODE & 0x0F00)>>8;
-    const uint16_t valueToAdd = OPCODE & 0x00FF;
-    V[regToSet] += valueToAdd;
+void AddValueToRegister(const uint8_t X, const uint8_t NN) {
+    V[X] += NN;
 }
 
-void SetIndexRegister(const uint16_t OPCODE) {
-    I = OPCODE & 0x0FFF;
+void SetIndexRegister(const uint16_t NNN) {
+    I = NNN;
 }
 
 
 //GUI
-void DrawDisplay(const uint16_t OPCODE) {
+void DrawDisplay(const uint8_t X, const uint8_t Y, const uint8_t N) {
     V[15] = 0;
-    const uint16_t pixelHeight = (OPCODE & 0X000F);
-    const uint16_t xCord =  V[(OPCODE & 0x0F00) >> 8] % 64;
-    const uint16_t yCord =  V[(OPCODE & 0x00F0) >> 4] % 32;
+    const uint16_t xCord = V[X] % 64;
+    const uint16_t yCord = V[Y] % 32;
 
-
-    for (uint16_t row = 0; row < pixelHeight; ++row) {
+    for (uint16_t row = 0; row < N; ++row) {
         const uint16_t spriteByte = RAM[I + row];
         const uint16_t y = yCord + row;
         if (y >= 32) break;
+
         for (uint8_t col = 0; col < 8; ++col) {
             const uint8_t x = xCord + col;
             if (x >= 64) break;
+
             if (spriteByte & (0x80 >> col)) {
                 if (frameBuffer[x][y]) {
                     V[15] = 1;
                 }
-                frameBuffer[x][y]^= 1;
+                frameBuffer[x][y] ^= 1;
             }
         }
     }
 }
+
 
 
 void UpdateDisplay() {
@@ -144,25 +140,30 @@ uint16_t Fetch() { //ai generated function credit where credits due.
 }
 
 void DecodeExecute(const uint16_t OPCODE) {
+    const uint8_t X   = (OPCODE & 0x0F00) >> 8;
+    const uint8_t Y   = (OPCODE & 0x00F0) >> 4;
+    const uint8_t N   = (OPCODE & 0x000F);
+    const uint8_t NN  = (OPCODE & 0x00FF);
+    const uint16_t NNN = (OPCODE & 0x0FFF);
+
     switch (OPCODE & 0xF000) {
         case 0x0000:
             ClearScreen();
             break;
         case 0x1000:
-            JumpInstruction(OPCODE);
+            JumpInstruction(NNN);
             break;
         case 0x6000:
-            SetRegister(OPCODE);
+            SetRegister(X,NN);
             break;
         case 0x7000:
-            AddValueToRegister(OPCODE);
+            AddValueToRegister(X,NN);
             break;
-
         case 0xA000:
-            SetIndexRegister(OPCODE);
+            SetIndexRegister(NNN);
             break;
         case 0xD000:
-            DrawDisplay(OPCODE);
+            DrawDisplay(X,Y,N);
             break;
         default:
             std::cout << "Unknown Opcode:" << OPCODE << std::endl;
