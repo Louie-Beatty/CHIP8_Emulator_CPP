@@ -7,7 +7,6 @@ uint8_t RAM[4096];
 int_fast16_t STACK[16];
 int_fast8_t SP = 0;
 
-
 int_fast8_t timerReg; //decremented at rate of 60Hz
 int_fast8_t soundReg;
 
@@ -68,6 +67,47 @@ void SetIndexRegister(const uint16_t NNN) {
     I = NNN;
 }
 
+void SetRegisterToRegister(const uint8_t X, const uint8_t Y) {
+    V[X] = V[Y];
+}
+
+void BitwiseOR(const uint8_t X, const uint8_t Y) {
+    V[X] |= V[Y];
+}
+
+void BitwiseAND(const uint8_t X, const uint8_t Y) {
+    V[X] &= V[Y];
+}
+
+void BitwiseXOR(const uint8_t X, const uint8_t Y) {
+    V[X] ^= V[Y];
+}
+
+void BitwiseADD(const uint8_t X, const uint8_t Y) {
+    const uint16_t sum  = V[X] += V[Y];
+    V[X] = sum & 0xFF;
+    if (sum>255) {V[15] =1;}else{V[15]=0;}; //V[15] is F the overflow register
+}
+
+void BitwiseSubtractXY(const uint8_t X, const uint8_t Y) {
+    const uint16_t sum  = V[X] - V[Y];
+    V[X] = sum & 0xFF;
+    if (sum < 256) {V[15] = 1;}else{V[15]=0;};
+}
+
+void BitwiseSubtractYX(const uint8_t X, const uint8_t Y) {
+    const uint16_t sum  = V[Y] - V[X];
+    V[X] = sum & 0xFF;
+    if (sum < 256) {V[15] = 1;}else{V[15]=0;};
+}
+
+//in bits
+void BitwiseShiftOneToTheRight(const uint8_t X, const uint8_t Y) {
+    V[X] = V[Y] >> 1;
+}
+void BitwiseShiftOneToTheLeft(const uint8_t X, const uint8_t Y) {
+    V[X] = V[Y] << 1;
+}
 
 //GUI
 void DrawDisplay(const uint8_t X, const uint8_t Y, const uint8_t N) {
@@ -159,6 +199,37 @@ void DecodeExecute(const uint16_t OPCODE) {
         case 0x7000:
             AddValueToRegister(X,NN);
             break;
+        case 0x8000:
+            switch (N) {
+                case 0x0:
+                        SetRegisterToRegister(X, Y);
+                        break;
+                case 0x1:
+                        BitwiseOR(X, Y);
+                        break;
+                case 0x2:
+                        BitwiseAND(X, Y);
+                        break;
+                case 0x3:
+                        BitwiseXOR(X, Y);
+                        break;
+            case 0x4:
+                    BitwiseADD(X,Y);
+                    break;
+            case 0x5:
+                    BitwiseSubtractXY(X,Y);
+                    break;
+            case 0x6:
+                    BitwiseShiftOneToTheRight(X,Y);
+            case 0x7:
+                    BitwiseSubtractYX(X,Y);
+                default:
+                        std::cout << "Unknown 0x8000 series opcode: " << OPCODE << std::endl;
+                        break;
+                }
+
+
+                break;
         case 0xA000:
             SetIndexRegister(NNN);
             break;
