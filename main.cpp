@@ -1,11 +1,13 @@
 #include <iostream>
 #include <cstdint>
+#include <vector>
+
 #include "raylib.h"
 
 int_fast16_t PC = 0x200;
 uint8_t RAM[4096];
-int_fast16_t STACK[16];
 int_fast8_t SP = 0;
+std::vector<int_fast16_t> CHIP8STACK;
 
 int_fast8_t timerReg; //decremented at rate of 60Hz
 int_fast8_t soundReg;
@@ -51,8 +53,8 @@ void ClearScreen() {
     //IDE cleaned up code,just a nested for loop.
 }
 
-void JumpInstruction(const uint16_t address) {
-    PC = address;
+void JumpInstruction(const uint16_t NNN) {
+    PC = NNN;
 }
 
 void SetRegister(const uint8_t X, const uint8_t NN) {
@@ -109,6 +111,47 @@ void BitwiseShiftOneToTheLeft(const uint8_t X, const uint8_t Y) {
     V[X] = V[Y] << 1;
 }
 
+void JumpWithOffset(const uint16_t NNN){
+    PC = NNN + V[0];
+}
+
+void RandomValueCHIP8(const uint8_t X,const uint8_t NN) {
+    const uint8_t num = std::rand() % 255; //deprecated in cpp11 but not critical!
+    V[X] = num&NN;
+}
+
+void JumpAndPushToStack(const uint16_t NNN) {
+    CHIP8STACK.push_back(PC);
+    PC = NNN;
+}
+
+void PopFromStack() {
+    if (CHIP8STACK.empty()) {std::cerr << "Stack Underflow Error on 0x00EE!\n";}
+    PC = CHIP8STACK.back();
+    CHIP8STACK.pop_back();
+}
+void SkipIfVXEqualToNN(const uint8_t X,const uint8_t NN) {
+    if (V[X] == NN) {
+        PC+=2;
+    }
+}
+void SkipIfVXNotEqualToNN(const uint8_t X,const uint8_t NN) {
+    if (V[X] != NN) {
+        PC+=2;
+    }
+}
+void SkipIfVXEqualToVY(const uint8_t X, const uint8_t Y) {
+    if (V[X] == V[Y]) {
+        PC+=2;
+    }
+}
+
+void SkipIfVXNotEqualToVY(const uint8_t X, const uint8_t Y) {
+    if (V[X] != V[Y]) {
+        PC+=2;
+    }
+}
+
 //GUI
 void DrawDisplay(const uint8_t X, const uint8_t Y, const uint8_t N) {
     V[15] = 0;
@@ -156,6 +199,8 @@ void LoadFile() {
     //later on will have preloaded cartridges memory carts also file handling lmao
     //add gui cool little cartridge screen
 
+    // https://www.raylib.com/examples/core/loader.html?name=core_drop_files
+
     //check if file exists
     //check have file perms
     //check if already open
@@ -188,10 +233,32 @@ void DecodeExecute(const uint16_t OPCODE) {
 
     switch (OPCODE & 0xF000) {
         case 0x0000:
-            ClearScreen();
+            switch (OPCODE) {
+            case 0x00E0:
+                    ClearScreen();
+                    break;
+            case 0x00EE:
+                   PopFromStack();
+                    break;
+            default:
+                    std::cout << "0x0000 opcode not recognised:  " << OPCODE << "\n";
+                    break;
+            }
             break;
         case 0x1000:
             JumpInstruction(NNN);
+            break;
+        case 0x2000:
+            JumpAndPushToStack(NNN);
+            break;
+        case 0x3000:
+            SkipIfVXEqualToNN(X,NN);
+            break;
+        case 0x4000:
+            SkipIfVXNotEqualToNN(X,NN);
+            break;
+        case 0x5000:
+            SkipIfVXEqualToVY(X,Y);
             break;
         case 0x6000:
             SetRegister(X,NN);
@@ -221,17 +288,28 @@ void DecodeExecute(const uint16_t OPCODE) {
                     break;
             case 0x6:
                     BitwiseShiftOneToTheRight(X,Y);
+                    break;
+            case 0xE:
+                    BitwiseShiftOneToTheLeft(X,Y);
+                    break;
             case 0x7:
                     BitwiseSubtractYX(X,Y);
                 default:
                         std::cout << "Unknown 0x8000 series opcode: " << OPCODE << std::endl;
                         break;
                 }
-
-
                 break;
+        case 0x9000:
+            SkipIfVXNotEqualToVY(X,Y);
+            break;
         case 0xA000:
             SetIndexRegister(NNN);
+            break;
+        case 0xB000:
+            JumpWithOffset(NNN);
+            break;
+        case 0xC000:
+            RandomValueCHIP8(X,NN);
             break;
         case 0xD000:
             DrawDisplay(X,Y,N);
@@ -241,6 +319,11 @@ void DecodeExecute(const uint16_t OPCODE) {
             break;
     }
 }
+
+//keyboard input
+// https://www.raylib.com/examples/core/loader.html?name=core_input_keys
+
+
 void FDELoop() {
     const uint16_t OPCODE = Fetch();
     PC += 2;
@@ -248,6 +331,7 @@ void FDELoop() {
 }
 
 void Setup() {
+    CHIP8STACK.reserve(16); //never needs more than 16 elements
     LoadFonts();
     LoadFile();
     InitWindow(640, 320, "CHIP8 - Louie Beatty");
