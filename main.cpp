@@ -9,8 +9,9 @@ uint8_t RAM[4096];
 int_fast8_t SP = 0;
 std::vector<int_fast16_t> CHIP8STACK;
 
-int_fast8_t timerReg; //decremented at rate of 60Hz
-int_fast8_t soundReg;
+//decremented at rate of 60Hz
+int_fast8_t timerReg = 0;
+int_fast8_t soundReg = 0;
 
 uint8_t frameBuffer[64][32];
 
@@ -342,8 +343,15 @@ int main() {
     Setup();
     //not a fan of this but works for now
     while (!WindowShouldClose()) {
-        for (int i = 0; i < 10; ++i) {
+        for (int i = 0; i < 10; ++i) { //600hz
             FDELoop();
+        }
+        //ROMs handle the value but always decremented at 60 times a second!
+        if (timerReg > 0) {
+            --timerReg;
+        }
+        if (soundReg > 0) {
+            --soundReg;
         }
         UpdateDisplay();
     }
