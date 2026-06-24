@@ -10,13 +10,14 @@ int_fast8_t SP = 0;
 std::vector<int_fast16_t> CHIP8STACK;
 
 //decremented at rate of 60Hz
-int_fast8_t timerReg = 0;
-int_fast8_t soundReg = 0;
+uint8_t timerReg = 0;
+uint8_t soundReg = 0;
 
 uint8_t frameBuffer[64][32];
 
 uint8_t V[16] = {0}; // V0->VF general purpose registers
 uint16_t I = 0;
+uint8_t keypad[16] = {0};
 
 uint8_t FONT[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -42,6 +43,26 @@ void LoadFonts() {
         constexpr int FONT_START_ADDRESS = 0x050; //05-09F
         RAM[FONT_START_ADDRESS + i] = FONT[i];
     }
+}
+
+
+void UpdateKeys() { //same mapping as old
+    keypad[0x1] = IsKeyDown(KEY_ONE);
+    keypad[0x2] = IsKeyDown(KEY_TWO);
+    keypad[0x3] = IsKeyDown(KEY_THREE);
+    keypad[0xC] = IsKeyDown(KEY_FOUR);
+    keypad[0x4] = IsKeyDown(KEY_Q);
+    keypad[0x5] = IsKeyDown(KEY_W);
+    keypad[0x6] = IsKeyDown(KEY_E);
+    keypad[0xD] = IsKeyDown(KEY_R);
+    keypad[0x7] = IsKeyDown(KEY_A);
+    keypad[0x8] = IsKeyDown(KEY_S);
+    keypad[0x9] = IsKeyDown(KEY_D);
+    keypad[0xE] = IsKeyDown(KEY_F);
+    keypad[0xA] = IsKeyDown(KEY_Z);
+    keypad[0x0] = IsKeyDown(KEY_X);
+    keypad[0xB] = IsKeyDown(KEY_C);
+    keypad[0xF] = IsKeyDown(KEY_V);
 }
 
 //ISA
@@ -153,6 +174,71 @@ void SkipIfVXNotEqualToVY(const uint8_t X, const uint8_t Y) {
     }
 }
 
+void SkipIfKeyIsPressed(const uint8_t X) {
+    if (keypad[V[X]] != 0) { // Check the keypad array using V[X] as the index
+        PC+=2;
+    }
+}
+void SkipIfKeyIsNotPressed(const uint8_t X) {
+    if (keypad[V[X]] == 0) {
+        PC+=2;
+    }
+}
+
+void SetVXToValueOfTimer(const uint8_t X) {
+    V[X] = timerReg;
+}
+
+void SetTimerToVXValue(const uint8_t X) {
+    timerReg = V[X];
+}
+
+void SetVXToValueOfSound(const uint8_t X) {
+    soundReg = V[X];
+}
+
+void AddToIndex(const uint8_t X) {
+    I += V[X];
+}
+
+void GetKey(const uint8_t X) {
+    bool keyDetected = false;
+    for (const unsigned char i : keypad) {
+        if (i) {
+            V[X] = i;
+            keyDetected = true;
+            break;
+        }
+    }
+    if (!keyDetected) {
+        PC -= 2;
+    }
+}
+
+void IndexToFont(const uint8_t X) {
+    I = 0x050 + (V[X] * 5);
+}
+
+void BinaryDecConversion(const uint8_t X) {
+    const uint8_t value = V[X];
+    RAM[I] = value / 100;
+    RAM[I + 1] = (value / 10) % 10;
+    RAM[I + 2] = value % 10;
+    //tested in python
+}
+
+void StoreInMemory(const uint8_t X) {
+    for (uint8_t i = 0; i <= X; ++i) {
+        RAM[I+i] = V[i];
+    }
+}
+
+void LoadMemory(const uint8_t X) {
+    for (uint8_t i = 0; i <= X; ++i) {
+        V[i] = RAM[I+i];
+    }
+}
+
 //GUI
 void DrawDisplay(const uint8_t X, const uint8_t Y, const uint8_t N) {
     V[15] = 0;
@@ -209,7 +295,7 @@ void LoadFile() {
     //close file
     constexpr int16_t ADDRESSABLEMEMORY = 3584; //4096-512
 
-    FILE* file = fopen("/mnt/c/Users/Louie/CLionProjects/Chip8_SummerAttempt/ibm_logo.ch8", "rb"); //sucks
+    FILE* file = fopen("/mnt/c/Users/Louie/CLionProjects/Chip8_SummerAttempt/Pong.ch8", "rb"); //sucks
     if (file == nullptr) {
         printf("ERROR: Could not find ibm_logo.ch8! Check your folder.\n");
         return;
@@ -315,6 +401,51 @@ void DecodeExecute(const uint16_t OPCODE) {
         case 0xD000:
             DrawDisplay(X,Y,N);
             break;
+        case 0xE000:
+            switch (NN) {
+                case 0x9E:
+                    SkipIfKeyIsPressed(X);
+                    break;
+            case 0xA1:
+                    SkipIfKeyIsNotPressed(X);
+                    break;
+            default:
+                    break;
+            }
+            break;
+        case 0xF000:
+            switch (NN) {
+            case 0x07:
+                    SetVXToValueOfTimer(X);
+                    break;
+            case 0x0A:
+                    GetKey(X);
+                    break;
+            case 0x15:
+                    SetTimerToVXValue(X);
+                    break;
+            case 0x18:
+                    SetVXToValueOfSound(X);
+                    break;
+            case 0x1E:
+                    AddToIndex(X);
+                    break;
+            case 0x29:
+                    IndexToFont(X);
+                    break;
+            case 0x33:
+                    BinaryDecConversion(X);
+                    break;
+            case 0x55:
+                    StoreInMemory(X);
+                    break;
+            case 0x65:
+                    LoadMemory(X);
+                    break;
+            default:
+                    break;
+            }
+            break;
         default:
             std::cout << "Unknown Opcode:" << OPCODE << std::endl;
             break;
@@ -343,6 +474,7 @@ int main() {
     Setup();
     //not a fan of this but works for now
     while (!WindowShouldClose()) {
+        UpdateKeys();
         for (int i = 0; i < 10; ++i) { //600hz
             FDELoop();
         }
