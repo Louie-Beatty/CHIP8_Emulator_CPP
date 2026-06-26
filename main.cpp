@@ -1,5 +1,6 @@
 #include "Chip8.h"
 #include "RaylibGraphics.h"
+#include <raylib.h>
 
 int main() {
     RaylibGraphics graphics;

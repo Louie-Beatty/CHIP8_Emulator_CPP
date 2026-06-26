@@ -1,6 +1,7 @@
 #include "Chip8.h"
 #include <iostream>
-#include <cstdio>
+#include <fstream>
+#include <filesystem>
 
 uint8_t FONT[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -27,32 +28,23 @@ Chip8::Chip8() {
     LoadFile();
 
 }
-void Chip8::LoadFile() { //NEXT COMMIT PLEASE REFACTOR LOUIE!
-    //later on will have preloaded cartridges memory carts also file handling lmao
-    //add gui cool little cartridge screen
 
-    // https://www.raylib.com/examples/core/loader.html?name=core_drop_files
-
-    //check if file exists
-    //check have file perms
-    //check if already open
-    //check can be read from
-    //close file
-    constexpr int16_t ADDRESSABLEMEMORY = 3584; //4096-512
-
-    FILE* file = fopen("/mnt/c/Users/Louie/CLionProjects/Chip8_SummerAttempt/ibm_logo.ch8", "rb"); //sucks
-    if (file == nullptr) {
-        printf("ERROR: Could not find ibm_logo.ch8! Check your folder.\n");
-        return;
-    }
-    fread(&m_RAM[0x200], 1, ADDRESSABLEMEMORY, file);
-    printf("\nloaded to memory");
-    fclose(file);
-
+void Chip8::LoadFile() {
+    constexpr int16_t ADDRESSABLEMEMORY = 3584; // 4096 - 512
+    std::string filename = "/mnt/c/Users/Louie/CLionProjects/Chip8_SummerAttempt/ibm_logo.ch8";
+    if (!std::filesystem::exists(filename)) {std::cerr << "ERROR: Could not find " << filename << "! Check your folder.\n";return;}
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {std::cerr << "ERROR: File exists but cannot be opened (check permissions).\n";return;}
+    const std::streamsize fileSize = file.tellg();
+    if (fileSize > ADDRESSABLEMEMORY) {std::cerr << "ERROR: ROM file is too large (" << fileSize << " bytes).\n";return;}
+    file.seekg(0, std::ios::beg);
+    if (!file.read(reinterpret_cast<char*>(&m_RAM[0x200]), fileSize)) {std::cerr << "ERROR: Failed to read data from the file.\n";return; }
 }
+// https://www.raylib.com/examples/core/loader.html?name=core_drop_files next thing!
 
 
-void Chip8::FDELoop() {
+
+void Chip8::FDELoop(){
     const uint16_t OPCODE = Fetch();
     m_PC += 2;
     DecodeExecute(OPCODE);
