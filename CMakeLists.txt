@@ -9,5 +9,9 @@ FetchContent_Declare(
         GIT_TAG 5.0
 )
 FetchContent_MakeAvailable(raylib)
-add_executable(Chip8_SummerAttempt main.cpp)
+add_executable(Chip8_SummerAttempt main.cpp
+        Chip8.cpp
+        Chip8.h
+        RaylibGraphics.cpp
+        RaylibGraphics.h)
 target_link_libraries(Chip8_SummerAttempt PRIVATE raylib)
