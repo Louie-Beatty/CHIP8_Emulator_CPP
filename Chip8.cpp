@@ -25,21 +25,20 @@ uint8_t FONT[80] = {
 Chip8::Chip8() {
     m_CHIP8STACK.reserve(16); //never needs more than 16 elements
     LoadFonts();
-    LoadFile();
-
 }
 
-void Chip8::LoadFile() {
+bool Chip8::LoadFile(const std::string& filename) {
     constexpr int16_t ADDRESSABLEMEMORY = 3584; // 4096 - 512
-    std::string filename = "/mnt/c/Users/Louie/CLionProjects/Chip8_SummerAttempt/ibm_logo.ch8";
-    if (!std::filesystem::exists(filename)) {std::cerr << "ERROR: Could not find " << filename << "! Check your folder.\n";return;}
+    if (!std::filesystem::exists(filename)) {std::cerr << "ERROR: Could not find " << filename << "! Check your folder.\n";return false;}
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) {std::cerr << "ERROR: File exists but cannot be opened (check permissions).\n";return;}
+    if (!file.is_open()) {std::cerr << "ERROR: File exists but cannot be opened (check permissions).\n";return false;}
     const std::streamsize fileSize = file.tellg();
-    if (fileSize > ADDRESSABLEMEMORY) {std::cerr << "ERROR: ROM file is too large (" << fileSize << " bytes).\n";return;}
+    if (fileSize > ADDRESSABLEMEMORY) {std::cerr << "ERROR: ROM file is too large (" << fileSize << " bytes).\n";return false;}
     file.seekg(0, std::ios::beg);
-    if (!file.read(reinterpret_cast<char*>(&m_RAM[0x200]), fileSize)) {std::cerr << "ERROR: Failed to read data from the file.\n";return; }
+    if (!file.read(reinterpret_cast<char*>(&m_RAM[0x200]), fileSize)) {std::cerr << "ERROR: Failed to read data from the file.\n";return false;}
+    return true;
 }
+
 // https://www.raylib.com/examples/core/loader.html?name=core_drop_files next thing!
 
 
@@ -406,7 +405,6 @@ void Chip8::DrawDisplay(const uint8_t X, const uint8_t Y, const uint8_t N) {
         }
     }
 }
-
 
 
 

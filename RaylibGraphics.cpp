@@ -41,3 +41,22 @@ void RaylibGraphics::UpdateKeys(uint8_t* keypad) { //same mapping as old
     keypad[0xB] = IsKeyDown(KEY_C);
     keypad[0xF] = IsKeyDown(KEY_V);
 }
+std::string RaylibGraphics::CheckDroppedFile() {
+    if (!IsFileDropped()) {
+        return "";
+    }
+    const FilePathList droppedFiles = LoadDroppedFiles();
+    const std::string path = droppedFiles.count > 0 ? droppedFiles.paths[0] : "";
+    UnloadDroppedFiles(droppedFiles);
+    return path;
+}
+
+void RaylibGraphics::DrawMenu() {
+    BeginDrawing();
+    ClearBackground(BLACK);
+    const auto msg = ".CH8 ROM Please :D";
+    constexpr int fontSize = 20;
+    const int textWidth = MeasureText(msg, fontSize);
+    DrawText(msg, (640 - textWidth) / 2, (320 - fontSize) / 2, fontSize, RAYWHITE);
+    EndDrawing();
+}

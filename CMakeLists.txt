@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.28)
 project(Chip8_SummerAttempt)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(
         raylib
@@ -9,9 +10,16 @@ FetchContent_Declare(
         GIT_TAG 5.0
 )
 FetchContent_MakeAvailable(raylib)
-add_executable(Chip8_SummerAttempt main.cpp
+add_executable(Chip8_SummerAttempt
+        main.cpp
         Chip8.cpp
         Chip8.h
         RaylibGraphics.cpp
         RaylibGraphics.h)
+target_include_directories(Chip8_SummerAttempt PRIVATE ${raylib_SOURCE_DIR}/src)
 target_link_libraries(Chip8_SummerAttempt PRIVATE raylib)
+if (WIN32)
+    target_link_options(Chip8_SummerAttempt PRIVATE -static -static-libgcc -static-libstdc++)
+elseif (UNIX AND NOT APPLE)
+    target_link_libraries(Chip8_SummerAttempt PRIVATE m pthread)
+endif()

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <vector>
+#include <string>
 class Chip8 {
 public:
     //decremented at rate of 60Hz
@@ -12,9 +13,8 @@ public:
 
     Chip8();
     void LoadFonts();
-    void LoadFile();
     void FDELoop();
-
+    bool LoadFile(const std::string& filename);
 
 private:
     int_fast16_t m_PC = 0x200;

@@ -5,7 +5,17 @@
 int main() {
     RaylibGraphics graphics;
     Chip8 Chip8;
+
+    bool romLoaded = false;
     while (!WindowShouldClose()) {
+        const std::string droppedFile = graphics.CheckDroppedFile();
+        if (!droppedFile.empty()) {
+            romLoaded = Chip8.LoadFile(droppedFile);
+        }
+        if (!romLoaded) {
+            graphics.DrawMenu();
+            continue;
+        }
         graphics.UpdateKeys(Chip8.m_keypad);
         for (int i = 0; i < 10; ++i) {
             Chip8.FDELoop();
@@ -20,6 +30,7 @@ int main() {
     }
     return 0;
 }
+
 
 //REFERENCES
 //https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
