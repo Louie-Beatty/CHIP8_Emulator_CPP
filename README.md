@@ -9,11 +9,17 @@ https://johnearnest.github.io/chip8Archive/
 
 ## Linux Build Process:
 git clone https://github.com/Louie-Beatty/CHIP8_Emulator_CPP
+<br>
 mkdir build
+<br>
 cd build
+<br>
 cmake ..
+<br>
 cmake --build .
+<br>
 ./Chip8_Emulator
+<br>
 Or just double click in your file manager
 
 
