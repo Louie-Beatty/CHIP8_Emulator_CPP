@@ -20,6 +20,7 @@ The original CHIP-8 used a 16-key hexadecimal keypad. This emulator maps those k
 ├───┼───┼───┼───┤           ├───┼───┼───┼───┤
 │ Z │ X │ C │ V │           │ A │ 0 │ B │ F │
 └───┴───┴───┴───┘           └───┴───┴───┴───┘
+```
 
 ## Linux/MacOS Build Process:
 git clone https://github.com/Louie-Beatty/CHIP8_Emulator_CPP
