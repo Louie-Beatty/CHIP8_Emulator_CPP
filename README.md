@@ -6,7 +6,7 @@ Prerequesites: git, cmake and a C++ 20 compiler (gcc, clang, msvc etc)
 Grab some roms from here: 
 https://johnearnest.github.io/chip8Archive/
 
-## Linux Build Process:
+## Linux/MacOS Build Process:
 git clone https://github.com/Louie-Beatty/CHIP8_Emulator_CPP
 <br>
 cd CHIP8_Emulator_CPP
