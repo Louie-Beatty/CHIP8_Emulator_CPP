@@ -7,19 +7,19 @@ Grab some roms from here:
 https://johnearnest.github.io/chip8Archive/
 
 ## Controls
-The original CHIP-8 used a 16-key hexadecimal keypad. This emulator maps those keys to the left side of your keyboard like this:
 
-**Modern Keyboard:**
-1 2 3 4
-Q W E R
-A S D F
-Z X C V
-
-*(Which maps to the original CHIP-8 keys:)*
-1 2 3 C
-4 5 6 D
-7 8 9 E
-A 0 B F
+The original CHIP-8 used a 16-key hexadecimal keypad. This emulator maps those keys directly to the left side of your keyboard for easy access.
+```text
+ Modern Keyboard             Original CHIP-8
+┌───┬───┬───┬───┐           ┌───┬───┬───┬───┐
+│ 1 │ 2 │ 3 │ 4 │           │ 1 │ 2 │ 3 │ C │
+├───┼───┼───┼───┤           ├───┼───┼───┼───┤
+│ Q │ W │ E │ R │    =>     │ 4 │ 5 │ 6 │ D │
+├───┼───┼───┼───┤           ├───┼───┼───┼───┤
+│ A │ S │ D │ F │           │ 7 │ 8 │ 9 │ E │
+├───┼───┼───┼───┤           ├───┼───┼───┼───┤
+│ Z │ X │ C │ V │           │ A │ 0 │ B │ F │
+└───┴───┴───┴───┘           └───┴───┴───┴───┘
 
 ## Linux/MacOS Build Process:
 git clone https://github.com/Louie-Beatty/CHIP8_Emulator_CPP
